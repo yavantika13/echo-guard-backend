@@ -69,54 +69,39 @@
 
 
 
-,import express from "express";
-import cors from "cors";
+import express from "express";
 import multer from "multer";
+import cors from "cors";
 import fetch from "node-fetch";
 
 const app = express();
 const upload = multer();
 app.use(cors());
 
-const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-// Test route
 app.get("/", (req, res) => {
-  res.send("Echo Guard Backend Running");
+  res.send("Echo-Guard backend running");
 });
 
-// Audio analysis endpoint
 app.post("/analyze-audio", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No audio file received" });
-    }
-
-    if (!GEMINI_API_KEY) {
-      return res.status(500).json({ error: "Gemini API key missing" });
-    }
-
-    const base64Audio = req.file.buffer.toString("base64");
+    const base64 = req.file.buffer.toString("base64");
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [
             {
               parts: [
                 {
-                  text: "This is wildlife forest audio. Detect tiger, chainsaw, gunshot, human or normal forest. Reply in one word only."
+                  text: "This is wildlife forest audio. Detect tiger, chainsaw, gunshot, human or normal forest. Reply one word only."
                 },
                 {
                   inlineData: {
                     mimeType: "audio/wav",
-                    data: base64Audio
+                    data: base64
                   }
                 }
               ]
@@ -127,17 +112,17 @@ app.post("/analyze-audio", upload.single("file"), async (req, res) => {
     );
 
     const data = await response.json();
-
     const label =
       data?.candidates?.[0]?.content?.parts?.[0]?.text || "unknown";
 
     res.json({ label });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "AI processing failed" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "AI failed" });
   }
 });
 
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Echo Guard backend running on port", PORT);
+  console.log("Server running on port", PORT);
 });
